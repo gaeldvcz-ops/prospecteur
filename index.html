@@ -8,7 +8,7 @@
   :root { --bg:#0b0d14; --surface:#11131e; --border:#1e2235; --orange:#EE6312; --gold:#C9A96E; --text:#f0f0f0; --muted:#666; --dim:#888; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Helvetica Neue',Arial,sans-serif; min-height:100vh; }
-  #modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:100; }
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-ites:center; justify-content:center; z-index:100; }
   #modal.hidden { display:none; }
   .mbox { background:#13151f; border:1px solid var(--orange); border-radius:16px; padding:40px 36px; max-width:500px; width:90%; }
   .mbox h2 { color:#fff; font-size:22px; margin-bottom:8px; }
@@ -600,7 +600,7 @@ document.getElementById('file-import').addEventListener('change', function(){
         const ids = extractIdsFromText(text);
         if(ids.length === 0){
           status.className = 'import-status err';
-          status.textContent = '⚠️ Pas d'IDs trouvés. Utilise le format CSV de préférence.';
+                              status.textContent = "⚠️ Pas d'IDs trouvés. Utilise le format CSV de préférence.";
           return;
         }
         ids.forEach(id => IMPORTED_IDS.add(id));
