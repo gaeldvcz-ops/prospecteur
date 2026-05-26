@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio DVCZ — Prospecteur v1.2</title>
+<title>Studio DVCZ — Prospecteur v1.21</title>
 <style>
   :root { --bg:#0b0d14; --surface:#11131e; --border:#1e2235; --orange:#EE6312; --gold:#C9A96E; --text:#f0f0f0; --muted:#666; --dim:#888; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -130,7 +130,7 @@
 <header>
   <div class="logo">
     <div class="lsq">S</div>
-    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.2</span></div></div>
+    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.21</span></div></div>
   </div>
   <button class="ba" id="ck">🔑 Clé API</button>
 </header>
@@ -155,6 +155,9 @@
           <option value="meal_takeaway">Restauration rapide</option>
           <option value="spa">Spa / Bien-être</option>
           <option value="tourist_attraction">Attraction touristique</option>
+          <option value="coworking_space">Coworking</option>
+          <option value="real_estate_agency">Agence immobilière</option>
+          <option value="real_estate_agent">Agent immobilier</option>
         </select>
       </div>
       <div>
@@ -261,8 +264,8 @@ let IMPORTED_IDS=new Set(); // IDs déjà prospectés (chargés depuis CSV/XLS)
 
 const FIELD_MASK='places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.primaryTypeDisplayName,nextPageToken';
 
-const TYPE_LABELS={restaurant:'restaurants',lodging:'hébergements',hotel:'hôtels',cafe:'cafés',bakery:'boulangeries',bar:'bars',meal_takeaway:'restauration rapide',spa:'spa',tourist_attraction:'attractions touristiques'};
-const TYPE_DISPLAY={restaurant:'Restaurant',lodging:'Hébergement',hotel:'Hôtel',cafe:'Café',bakery:'Boulangerie',bar:'Bar',meal_takeaway:'Takeaway',spa:'Spa',tourist_attraction:'Tourisme'};
+const TYPE_LABELS={restaurant:'restaurants',lodging:'hébergements',hotel:'hôtels',cafe:'cafés',bakery:'boulangeries',bar:'bars',meal_takeaway:'restauration rapide',spa:'spa',tourist_attraction:'attractions touristiques',coworking_space:'coworking',real_estate_agency:'agences immobilières',real_estate_agent:'agents immobiliers'};
+const TYPE_DISPLAY={restaurant:'Restaurant',lodging:'Hébergement',hotel:'Hôtel',cafe:'Café',bakery:'Boulangerie',bar:'Bar',meal_takeaway:'Takeaway',spa:'Spa',tourist_attraction:'Tourisme',coworking_space:'Coworking',real_estate_agency:'Agence immo',real_estate_agent:'Agent immo'};
 
 // ── Modal ──────────────────────────────────────────────────
 const modal=document.getElementById('modal');
@@ -535,6 +538,10 @@ function appendCards(places){
             </select>
           </div>
         </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:#555;white-space:nowrap">✉️ Email</span>
+          <input type="email" class="card-email" data-id="${id}" placeholder="email@exemple.com" style="flex:1;padding:5px 10px;font-size:12px;background:#0b0d14;border:1px solid #2a2d3e;border-radius:6px;color:var(--text)" onclick="event.stopPropagation()" oninput="saveQual('${id}')">
+        </div>
         <textarea class="card-comment" data-id="${id}" placeholder="Commentaire..." rows="2" onclick="event.stopPropagation()" oninput="saveQual('${id}')"></textarea>
       </div>`;
     card.onclick=(ev)=>{
@@ -579,6 +586,7 @@ function saveQual(id){
     photos: card.querySelector('.qual-photos')?.value||'',
     ig: card.querySelector('.qual-ig')?.value||'',
     gestion: card.querySelector('.qual-gestion')?.value||'',
+    email: card.querySelector('.card-email')?.value||'',
     comment: card.querySelector('.card-comment')?.value||''
   };
 }
@@ -726,7 +734,7 @@ document.getElementById('ex').onclick=()=>{
     return[
       p.displayName?.text||'', city, p.websiteUri||'', p.googleMapsUri||'',
       q.comment||'', q.photos||'', q.ig||'', q.gestion||'',
-      '', p.nationalPhoneNumber||'', addr,
+      q.email||'', p.nationalPhoneNumber||'', addr,
       p.rating||'', p.userRatingCount||'',
       igUrl(p.displayName?.text||'', addr),
       TYPE_DISPLAY[CUR_TYPE]||CUR_TYPE, cpAddr||zones, ratingFilter
