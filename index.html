@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio DVCZ — Prospecteur v1.1</title>
+<title>Studio DVCZ — Prospecteur v1.2</title>
 <style>
   :root { --bg:#0b0d14; --surface:#11131e; --border:#1e2235; --orange:#EE6312; --gold:#C9A96E; --text:#f0f0f0; --muted:#666; --dim:#888; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Helvetica Neue',Arial,sans-serif; min-height:100vh; }
-  #modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-ites:center; justify-content:center; z-index:100; }
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:100; }
   #modal.hidden { display:none; }
   .mbox { background:#13151f; border:1px solid var(--orange); border-radius:16px; padding:40px 36px; max-width:500px; width:90%; }
   .mbox h2 { color:#fff; font-size:22px; margin-bottom:8px; }
@@ -99,6 +99,13 @@
   .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--dim); margin-bottom:12px; }
   .legend-item { display:flex; align-items:center; gap:5px; }
   .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  /* Qualification fields dans les cartes */
+  .card-fields { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; }
+  .card-fields select { padding:5px 28px 5px 8px; font-size:11px; background:#0b0d14; border:1px solid #2a2d3e; border-radius:6px; color:var(--gold); }
+  .card-fields select:focus { border-color:var(--orange); }
+  .card-comment { width:100%; margin-top:8px; padding:7px 10px; background:#0b0d14; border:1px solid #2a2d3e; border-radius:6px; color:var(--text); font-size:12px; font-family:inherit; resize:vertical; min-height:48px; outline:none; }
+  .card-comment:focus { border-color:var(--orange); }
+  .card-comment::placeholder { color:#444; }
   @media(max-width:700px) { .g3{grid-template-columns:1fr 1fr;} .g4{grid-template-columns:1fr 1fr;} header{padding:14px 16px;} main{padding:16px 12px;} .panel{padding:16px;} }
 </style>
 </head>
@@ -123,7 +130,7 @@
 <header>
   <div class="logo">
     <div class="lsq">S</div>
-    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.1</span></div></div>
+    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.2</span></div></div>
   </div>
   <button class="ba" id="ck">🔑 Clé API</button>
 </header>
@@ -249,6 +256,7 @@ let KEY = localStorage.getItem('gk')||'';
 let RES=[], SEL=new Set(), SEEN=new Set(), HIST=[];
 let NEXT_TOK=null, LAST_Q='', LAST_MINR=0, LAST_MAXR=5, CUR_TYPE='restaurant', LAST_CP='';
 let DISMISSED=new Set();
+let QUAL={}; // {id: {photos, ig, gestion, comment}}
 let IMPORTED_IDS=new Set(); // IDs déjà prospectés (chargés depuis CSV/XLS)
 
 const FIELD_MASK='places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.primaryTypeDisplayName,nextPageToken';
@@ -385,6 +393,7 @@ document.getElementById('reset-btn').onclick=()=>{
   RES=[]; SEL=new Set(); SEEN=new Set(); HIST=[];
   NEXT_TOK=null; LAST_Q='';
   DISMISSED=new Set();
+  QUAL={};
   IMPORTED_IDS=new Set();
   document.getElementById('import-status').textContent='';
   document.getElementById('rl').innerHTML='';
@@ -497,6 +506,36 @@ function appendCards(places){
             Booking
           </a>` : ''}
         </div>
+        <div class="card-fields">
+          <div>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Photos</label>
+            <select class="qual-photos" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Qualité photos —</option>
+              <option value="Bonne">📸 Bonne</option>
+              <option value="Correcte">👍 Correcte</option>
+              <option value="Passable">😐 Passable</option>
+              <option value="Catastrophique">❌ Catastrophique</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Instagram</label>
+            <select class="qual-ig" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Compte IG —</option>
+              <option value="Oui actif">✅ Oui actif</option>
+              <option value="Oui inactif">😴 Oui inactif</option>
+              <option value="Non">❌ Non</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Gestionnaire</label>
+            <select class="qual-gestion" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Gestionnaire —</option>
+              <option value="Direct">🏠 Direct</option>
+              <option value="Structure">🏢 Structure</option>
+            </select>
+          </div>
+        </div>
+        <textarea class="card-comment" data-id="${id}" placeholder="Commentaire..." rows="2" onclick="event.stopPropagation()" oninput="saveQual('${id}')"></textarea>
       </div>`;
     card.onclick=(ev)=>{
       if(ev.target.closest('a')||ev.target.closest('.btn-dismiss')) return;
@@ -531,6 +570,17 @@ function toggleCard(id, card){
   if(SEL.has(id)){SEL.delete(id); card.classList.remove('on'); card.querySelector('.cb').innerHTML='&nbsp;';}
   else{SEL.add(id); card.classList.add('on'); card.querySelector('.cb').textContent='✓';}
   updUI();
+}
+
+function saveQual(id){
+  const card=document.querySelector('.card[data-id="'+id+'"]');
+  if(!card) return;
+  QUAL[id]={
+    photos: card.querySelector('.qual-photos')?.value||'',
+    ig: card.querySelector('.qual-ig')?.value||'',
+    gestion: card.querySelector('.qual-gestion')?.value||'',
+    comment: card.querySelector('.card-comment')?.value||''
+  };
 }
 
 function updLM(){
@@ -600,7 +650,7 @@ document.getElementById('file-import').addEventListener('change', function(){
         const ids = extractIdsFromText(text);
         if(ids.length === 0){
           status.className = 'import-status err';
-                              status.textContent = "⚠️ Pas d'IDs trouvés. Utilise le format CSV de préférence.";
+          status.textContent = "⚠️ Pas d'IDs trouvés. Utilise le format CSV de préférence.";
           return;
         }
         ids.forEach(id => IMPORTED_IDS.add(id));
@@ -665,19 +715,20 @@ function parseCSVLine(line){
 // ── Export CSV ─────────────────────────────────────────────
 document.getElementById('ex').onclick=()=>{
   const rows=RES.filter(p=>SEL.has(p.id)&&!DISMISSED.has(p.id)&&!IMPORTED_IDS.has(p.id)); if(!rows.length) return;
-  const hdrs=['Nom','Adresse','Ville','Téléphone','Site web','Note','Avis','Instagram (recherche)','Google Maps','Type','Code(s) postal(aux)','Filtres note'];
+  const hdrs=['Nom','Ville','Site web','Google Maps','Commentaire','Qualité photos','Instagram','Gestionnaire','Mail','Téléphone','Adresse','Note','Avis','Instagram (recherche)','Type','Code(s) postal(aux)','Filtres note'];
   const zones=HIST.map(h=>h.cp).join('/');
   const ratingFilter=HIST.map(h=>`${h.minr>0?h.minr+'★ min':''} ${h.maxr<5?h.maxr+'★ max':''}`).filter(Boolean).join(' / ')||'Toutes notes';
   const data=rows.map(p=>{
     const addr=p.formattedAddress||'';
     const city=extractCity(addr);
     const cpAddr=addr.match(/\b\d{5}\b/)?addr.match(/\b\d{5}\b/)[0]:'';
+    const q=QUAL[p.id]||{};
     return[
-      p.displayName?.text||'', addr, city,
-      p.nationalPhoneNumber||'', p.websiteUri||'',
+      p.displayName?.text||'', city, p.websiteUri||'', p.googleMapsUri||'',
+      q.comment||'', q.photos||'', q.ig||'', q.gestion||'',
+      '', p.nationalPhoneNumber||'', addr,
       p.rating||'', p.userRatingCount||'',
       igUrl(p.displayName?.text||'', addr),
-      p.googleMapsUri||'',
       TYPE_DISPLAY[CUR_TYPE]||CUR_TYPE, cpAddr||zones, ratingFilter
     ];
   });
