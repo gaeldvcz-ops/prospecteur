@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio DVCZ — Prospecteur v1.21</title>
+<title>Studio DVCZ — Prospecteur v1.3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root { --bg:#0b0d14; --surface:#11131e; --border:#1e2235; --orange:#EE6312; --gold:#C9A96E; --text:#f0f0f0; --muted:#666; --dim:#888; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -130,7 +131,7 @@
 <header>
   <div class="logo">
     <div class="lsq">S</div>
-    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.21</span></div></div>
+    <div><div class="lt">Studio DVCZ — Prospecteur</div><div class="ls">Google Places · Génération de leads · <span style="color:var(--orange)">v1.3</span></div></div>
   </div>
   <button class="ba" id="ck">🔑 Clé API</button>
 </header>
@@ -158,6 +159,7 @@
           <option value="coworking_space">Coworking</option>
           <option value="real_estate_agency">Agence immobilière</option>
           <option value="real_estate_agent">Agent immobilier</option>
+          <option value="concierge">Conciergerie</option>
         </select>
       </div>
       <div>
@@ -242,7 +244,7 @@
       <div class="rc"><span class="big" id="cnt">0</span> résultat<span id="cnts"></span> · <span id="scnt">0</span> sélectionné<span id="ss"></span></div>
       <div class="ra">
         <button class="bg" id="ta">Tout sélectionner</button>
-        <button class="be" id="ex" disabled>↓ Exporter CSV (0)</button>
+        <button class="be" id="ex" disabled>↓ Exporter XLSX (0)</button>
       </div>
     </div>
     <div id="rl"></div>
@@ -264,8 +266,8 @@ let IMPORTED_IDS=new Set(); // IDs déjà prospectés (chargés depuis CSV/XLS)
 
 const FIELD_MASK='places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.primaryTypeDisplayName,nextPageToken';
 
-const TYPE_LABELS={restaurant:'restaurants',lodging:'hébergements',hotel:'hôtels',cafe:'cafés',bakery:'boulangeries',bar:'bars',meal_takeaway:'restauration rapide',spa:'spa',tourist_attraction:'attractions touristiques',coworking_space:'coworking',real_estate_agency:'agences immobilières',real_estate_agent:'agents immobiliers'};
-const TYPE_DISPLAY={restaurant:'Restaurant',lodging:'Hébergement',hotel:'Hôtel',cafe:'Café',bakery:'Boulangerie',bar:'Bar',meal_takeaway:'Takeaway',spa:'Spa',tourist_attraction:'Tourisme',coworking_space:'Coworking',real_estate_agency:'Agence immo',real_estate_agent:'Agent immo'};
+const TYPE_LABELS={restaurant:'restaurants',lodging:'hébergements',hotel:'hôtels',cafe:'cafés',bakery:'boulangeries',bar:'bars',meal_takeaway:'restauration rapide',spa:'spa',tourist_attraction:'attractions touristiques',coworking_space:'coworking',real_estate_agency:'agences immobilières',real_estate_agent:'agents immobiliers',concierge:'conciergeries'};
+const TYPE_DISPLAY={restaurant:'Restaurant',lodging:'Hébergement',hotel:'Hôtel',cafe:'Café',bakery:'Boulangerie',bar:'Bar',meal_takeaway:'Takeaway',spa:'Spa',tourist_attraction:'Tourisme',coworking_space:'Coworking',real_estate_agency:'Agence immo',real_estate_agent:'Agent immo',concierge:'Conciergerie'};
 
 // ── Modal ──────────────────────────────────────────────────
 const modal=document.getElementById('modal');
@@ -511,36 +513,38 @@ function appendCards(places){
         </div>
         <div class="card-fields">
           <div>
-            <label style="font-size:10px;margin-bottom:3px;color:#555">Photos</label>
-            <select class="qual-photos" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
-              <option value="">— Qualité photos —</option>
-              <option value="Bonne">📸 Bonne</option>
-              <option value="Correcte">👍 Correcte</option>
-              <option value="Passable">😐 Passable</option>
-              <option value="Catastrophique">❌ Catastrophique</option>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Note Instagram</label>
+            <select class="qual-ig-rating" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Note —</option>
+              <option value="1">★☆☆☆☆</option>
+              <option value="2">★★☆☆☆</option>
+              <option value="3">★★★☆☆</option>
+              <option value="4">★★★★☆</option>
+              <option value="5">★★★★★</option>
             </select>
           </div>
           <div>
-            <label style="font-size:10px;margin-bottom:3px;color:#555">Instagram</label>
-            <select class="qual-ig" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
-              <option value="">— Compte IG —</option>
-              <option value="Oui actif">✅ Oui actif</option>
-              <option value="Oui inactif">😴 Oui inactif</option>
-              <option value="Non">❌ Non</option>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Note fiche GMB</label>
+            <select class="qual-gmb-rating" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Note —</option>
+              <option value="1">★☆☆☆☆</option>
+              <option value="2">★★☆☆☆</option>
+              <option value="3">★★★☆☆</option>
+              <option value="4">★★★★☆</option>
+              <option value="5">★★★★★</option>
             </select>
           </div>
           <div>
-            <label style="font-size:10px;margin-bottom:3px;color:#555">Gestionnaire</label>
-            <select class="qual-gestion" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
-              <option value="">— Gestionnaire —</option>
-              <option value="Direct">🏠 Direct</option>
-              <option value="Structure">🏢 Structure</option>
+            <label style="font-size:10px;margin-bottom:3px;color:#555">Note annonces</label>
+            <select class="qual-listing-rating" data-id="${id}" onchange="saveQual('${id}')" onclick="event.stopPropagation()">
+              <option value="">— Note —</option>
+              <option value="1">★☆☆☆☆</option>
+              <option value="2">★★☆☆☆</option>
+              <option value="3">★★★☆☆</option>
+              <option value="4">★★★★☆</option>
+              <option value="5">★★★★★</option>
             </select>
           </div>
-        </div>
-        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:#555;white-space:nowrap">✉️ Email</span>
-          <input type="email" class="card-email" data-id="${id}" placeholder="email@exemple.com" style="flex:1;padding:5px 10px;font-size:12px;background:#0b0d14;border:1px solid #2a2d3e;border-radius:6px;color:var(--text)" onclick="event.stopPropagation()" oninput="saveQual('${id}')">
         </div>
         <textarea class="card-comment" data-id="${id}" placeholder="Commentaire..." rows="2" onclick="event.stopPropagation()" oninput="saveQual('${id}')"></textarea>
       </div>`;
@@ -583,10 +587,9 @@ function saveQual(id){
   const card=document.querySelector('.card[data-id="'+id+'"]');
   if(!card) return;
   QUAL[id]={
-    photos: card.querySelector('.qual-photos')?.value||'',
-    ig: card.querySelector('.qual-ig')?.value||'',
-    gestion: card.querySelector('.qual-gestion')?.value||'',
-    email: card.querySelector('.card-email')?.value||'',
+    igRating: card.querySelector('.qual-ig-rating')?.value||'',
+    gmbRating: card.querySelector('.qual-gmb-rating')?.value||'',
+    listingRating: card.querySelector('.qual-listing-rating')?.value||'',
     comment: card.querySelector('.card-comment')?.value||''
   };
 }
@@ -612,7 +615,7 @@ function updUI(){
   document.getElementById('scnt').textContent=n;
   document.getElementById('ss').textContent=n>1?'s':'';
   const ex=document.getElementById('ex');
-  ex.textContent='↓ Exporter CSV ('+n+')'; ex.disabled=n===0;
+  ex.textContent='↓ Exporter XLSX ('+n+')'; ex.disabled=n===0;
   document.getElementById('ta').textContent=(n===RES.length&&RES.length>0)?'Désélectionner tout':'Tout sélectionner';
 }
 
@@ -677,24 +680,18 @@ document.getElementById('file-import').addEventListener('change', function(){
 });
 
 function parseIdsFromCSV(text){
-  // Cherche la colonne "Google Maps" qui contient des URLs avec place_id ou CID
-  // Mais l'ID Place unique qu'on stocke dans data-id est dans les URLs Maps
-  // On extrait aussi depuis la première colonne "Nom" pour matcher par nom si pas d'ID
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if(lines.length < 2) return [];
 
-  // Cherche colonne Google Maps (contient place_id dans l'URL ou l'ID direct)
   const headers = parseCSVLine(lines[0]);
   const mapsCol = headers.findIndex(h => h.toLowerCase().includes('maps'));
   const ids = [];
 
   for(let i = 1; i < lines.length; i++){
     const cols = parseCSVLine(lines[i]);
-    // Cherche un place ID dans l'URL Maps (format: place_id:ChIJ... ou /maps/place/...)
     const mapsUrl = mapsCol >= 0 ? cols[mapsCol] || '' : '';
     const placeIdMatch = mapsUrl.match(/place_id[=:]([A-Za-z0-9_-]+)/);
     if(placeIdMatch) { ids.push(placeIdMatch[1]); continue; }
-    // Fallback : cherche ChIJ... directement dans toute la ligne
     const chijMatch = lines[i].match(/ChIJ[A-Za-z0-9_-]{10,}/);
     if(chijMatch) ids.push(chijMatch[0]);
   }
@@ -702,7 +699,6 @@ function parseIdsFromCSV(text){
 }
 
 function extractIdsFromText(text){
-  // Cherche tous les ChIJ... dans le texte brut (fonctionne pour XLS converti en texte)
   const matches = text.match(/ChIJ[A-Za-z0-9_-]{10,}/g) || [];
   return [...new Set(matches)];
 }
@@ -720,31 +716,31 @@ function parseCSVLine(line){
   return result;
 }
 
-// ── Export CSV ─────────────────────────────────────────────
+// ── Export XLSX (colonnes Airtable) ─────────────────────────
 document.getElementById('ex').onclick=()=>{
   const rows=RES.filter(p=>SEL.has(p.id)&&!DISMISSED.has(p.id)&&!IMPORTED_IDS.has(p.id)); if(!rows.length) return;
-  const hdrs=['Nom','Ville','Site web','Google Maps','Commentaire','Qualité photos','Instagram','Gestionnaire','Mail','Téléphone','Adresse','Note','Avis','Instagram (recherche)','Type','Code(s) postal(aux)','Filtres note'];
-  const zones=HIST.map(h=>h.cp).join('/');
-  const ratingFilter=HIST.map(h=>`${h.minr>0?h.minr+'★ min':''} ${h.maxr<5?h.maxr+'★ max':''}`).filter(Boolean).join(' / ')||'Toutes notes';
+  const hdrs=['Nom de la société',"Type d'établissement",'Url instagram','Notation instagram','Url GMB','Note des avis GMB','Notation fiche GMB','Url site internet','Notation annonces','Commentaires'];
   const data=rows.map(p=>{
     const addr=p.formattedAddress||'';
-    const city=extractCity(addr);
-    const cpAddr=addr.match(/\b\d{5}\b/)?addr.match(/\b\d{5}\b/)[0]:'';
     const q=QUAL[p.id]||{};
     return[
-      p.displayName?.text||'', city, p.websiteUri||'', p.googleMapsUri||'',
-      q.comment||'', q.photos||'', q.ig||'', q.gestion||'',
-      q.email||'', p.nationalPhoneNumber||'', addr,
-      p.rating||'', p.userRatingCount||'',
+      p.displayName?.text||'',
+      TYPE_DISPLAY[CUR_TYPE]||CUR_TYPE,
       igUrl(p.displayName?.text||'', addr),
-      TYPE_DISPLAY[CUR_TYPE]||CUR_TYPE, cpAddr||zones, ratingFilter
+      q.igRating?parseInt(q.igRating):'',
+      p.googleMapsUri||'',
+      p.rating||'',
+      q.gmbRating?parseInt(q.gmbRating):'',
+      p.websiteUri||'',
+      q.listingRating?parseInt(q.listingRating):'',
+      q.comment||''
     ];
   });
-  const csv=[hdrs,...data].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download='prospects_'+CUR_TYPE+'_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
+  const ws=XLSX.utils.aoa_to_sheet([hdrs,...data]);
+  ws['!cols']=[{wch:28},{wch:16},{wch:40},{wch:12},{wch:40},{wch:10},{wch:12},{wch:32},{wch:12},{wch:40}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Prospects');
+  XLSX.writeFile(wb, 'prospects_'+CUR_TYPE+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 };
 </script>
 </body>
